@@ -1,0 +1,13 @@
+{
+  "name": "Abide — Scripture Memorization",
+  "short_name": "Abide",
+  "description": "A quiet space to keep Scripture close and practice remembering it.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2efe5",
+  "theme_color": "#f2efe5",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
