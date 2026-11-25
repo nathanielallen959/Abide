@@ -11,10 +11,6 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<meta name="description" content="A quiet space to keep Scripture close and practice remembering it.">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
 <title>Abide — Scripture Memorization</title>
 <style>
 :root{
@@ -98,10 +94,10 @@ textarea.field{min-height:112px;resize:vertical;line-height:1.5}
    <button class="btn" id="micBtn" onclick="toggleSpeech()">● Start listening</button>
    <div id="speechStatus" class="small" style="margin-top:10px">Speech recognition availability depends on your browser. Microphone permission is required.</div>
    <div class="practicebox" style="background:#fffefa"><div class="small">LIVE PASSAGE CHECK</div><div id="wordFeedback" class="wordline" aria-live="polite"></div><div class="feedback-legend"><span><i class="good"></i>Matched</span><span><i class="wrong"></i>Check this word</span><span><i class="waiting"></i>Not heard yet</span></div></div>
-   <div class="practicebox" style="background:#fffefa"><div class="small">WHAT WE HEARD</div><div id="transcript" class="wordline" style="font-size:16px"></div></div>
+   <div class="practicebox" style="background:#fffefa"><div class="small">RECOGNIZED WORDS</div><div id="transcript" class="small" aria-live="polite">Your spoken words stay hidden.</div></div>
    <div id="speechResult" class="small"></div>
   </div>
-  <div id="typeMode" class="practicebox hidden"><div class="eyebrow">TYPE FROM MEMORY</div><textarea id="typedAnswer" class="field" placeholder="Write the passage from memory…"></textarea><button class="btn" style="margin-top:10px" onclick="checkTyped()">Check my recall</button><div id="typedResult" class="small" style="margin-top:10px"></div></div>
+  <div id="typeMode" class="practicebox hidden"><div class="eyebrow">TYPE FROM MEMORY</div><div id="letterHintPanel" class="practicebox" style="background:#fffefa"><div class="small">FIRST-LETTER HINTS</div><div id="letterHints" class="wordline" aria-label="First letter of each word"></div><button class="text-btn" id="hintToggleBtn" onclick="toggleLetterHints()" style="padding-left:0">Hide first-letter hints</button></div><textarea id="typedAnswer" class="field" placeholder="Write the passage from memory…"></textarea><button class="btn" style="margin-top:10px" onclick="checkTyped()">Check my recall</button><div id="typedResult" class="small" style="margin-top:10px"></div></div>
   <div id="hideMode" class="practicebox hidden"><div class="eyebrow">RECALL THE PASSAGE</div><p class="sub">Read it once, then hide the text and recite it to yourself.</p><button class="btn" onclick="revealToggle()" id="revealBtn">Hide passage</button><div id="hiddenVerse" class="verse"></div></div>
  </div>
 </section>
@@ -150,11 +146,13 @@ function render(){ $('countStat').textContent=passages.length;$('reviewStat').te
  renderPracticeChoose();
 }
 function renderPracticeChoose(){if(!current){$('practiceChoose').classList.remove('hidden');$('practiceActive').classList.add('hidden')}$('practiceChoose').innerHTML=passages.map(p=>`<div class="passage"><div class="ref">${esc(p.ref)}</div><h4>${esc(p.title)}</h4><p>${esc(p.text)}</p><button class="btn" onclick="startPractice(${p.id})">Choose passage →</button></div>`).join('')||'<div class="card empty">Add a passage in your library first, then it will appear here.</div>'}
-function startPractice(id){current=passages.find(p=>p.id===id);if(!current)return;practiceMarked=false;$('practiceChoose').classList.add('hidden');$('practiceActive').classList.remove('hidden');$('practiceRef').textContent=current.ref;$('practiceTitle').textContent=current.title;$('practiceText').textContent=current.text;$('hiddenVerse').textContent=current.text;$('transcript').textContent='';$('wordFeedback').textContent='Your passage will appear here as you recite.';$('typedAnswer').value='';$('typedResult').textContent='';$('speechResult').textContent='';$('revealBtn').textContent='Hide passage';$('hiddenVerse').classList.remove('hidden');setMode('recite');document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='practice'));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='practice'));window.scrollTo(0,0)}
+function startPractice(id){current=passages.find(p=>p.id===id);if(!current)return;practiceMarked=false;$('practiceChoose').classList.add('hidden');$('practiceActive').classList.remove('hidden');$('practiceRef').textContent=current.ref;$('practiceTitle').textContent=current.title;$('practiceText').textContent=current.text;$('hiddenVerse').textContent=current.text;$('transcript').textContent='Your spoken words stay hidden.';;$('wordFeedback').textContent='Your passage will appear here as you recite.';$('typedAnswer').value='';$('typedResult').textContent='';$('speechResult').textContent='';$('revealBtn').textContent='Hide passage';$('hiddenVerse').classList.remove('hidden');$('letterHints').textContent=firstLetterHints(current.text);$('letterHintPanel').classList.remove('hidden');$('hintToggleBtn').textContent='Hide first-letter hints';setMode('recite');document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='practice'));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='practice'));window.scrollTo(0,0)}
 function exitPractice(){stopSpeech();current=null;renderPracticeChoose()}
-function setMode(m){mode=m;stopSpeech();$('reciteMode').classList.toggle('hidden',m!=='recite');$('typeMode').classList.toggle('hidden',m!=='type');$('hideMode').classList.toggle('hidden',m!=='hide');$('modePill').textContent=m==='recite'?'SPEAK IT':m==='type'?'TYPE IT':'RECALL IT'}
+function setMode(m){mode=m;stopSpeech();$('reciteMode').classList.toggle('hidden',m!=='recite');$('typeMode').classList.toggle('hidden',m!=='type');$('hideMode').classList.toggle('hidden',m!=='hide');$('practiceText').classList.add('hidden');$('letterHintPanel').classList.toggle('hidden',m!=='type');$('modePill').textContent=m==='recite'?'SPEAK IT':m==='type'?'TYPE IT':'RECALL IT'}
 function revealToggle(){const v=$('hiddenVerse');v.classList.toggle('hidden');$('revealBtn').textContent=v.classList.contains('hidden')?'Show passage':'Hide passage'}
 function normalize(s){return s.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu,' ').replace(/\s+/g,' ').trim()}
+function firstLetterHints(s){return String(s||'').replace(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu,word=>[...word][0])}
+function toggleLetterHints(){const panel=$('letterHintPanel'),hidden=panel.classList.toggle('hidden');$('hintToggleBtn').textContent=hidden?'Show first-letter hints':'Hide first-letter hints'}
 function similarity(a,b){const aa=normalize(a).split(' ').filter(Boolean),bb=normalize(b).split(' ').filter(Boolean);if(!aa.length)return 0;let hit=0,used={};for(const w of aa){let idx=bb.findIndex((x,i)=>x===w&&!used[i]);if(idx>=0){hit++;used[idx]=1}}return Math.round(hit/Math.max(aa.length,bb.length,1)*100)}
 function checkTyped(){if(!current)return;const score=similarity(current.text,$('typedAnswer').value);$('typedResult').textContent=`Approximate word match: ${score}%. Review the original passage for exact wording.`;if(score>=90)markReview()}
 function markReview(){if(!current||practiceMarked)return;const p=passages.find(x=>x.id===current.id);if(!p)return;p.reviews=(p.reviews||0)+1;practiceMarked=true;const today=new Date().toLocaleDateString('en-CA');const last=localStorage.getItem('abide_last_practice');const yesterday=new Date(Date.now()-86400000).toLocaleDateString('en-CA');let streak=Number(localStorage.getItem('abide_streak')||0);if(last!==today){streak=last===yesterday?streak+1:1;localStorage.setItem('abide_streak',String(streak));localStorage.setItem('abide_last_practice',today)}persist()}
@@ -165,14 +163,14 @@ function renderWordFeedback(expected, spoken){
  for(let i=0;i<target.length;i++){
   const word=target[i]; let found=-1;
   for(let j=cursor;j<Math.min(heard.length,cursor+4);j++){if(heard[j]===word){found=j;break}}
-  if(found>=0){html.push(`<span class="correct">${esc(word)}</span>`);cursor=found+1}
-  else if(cursor<heard.length){html.push(`<span class="miss">${esc(word)}</span>`);cursor++}
-  else html.push(`<span class="pending">${esc(word)}</span>`);
+  if(found>=0){html.push('<span class="correct" aria-label="Matched">●</span>');cursor=found+1}
+  else if(cursor<heard.length){html.push('<span class="miss" aria-label="Check this word">●</span>');cursor++}
+  else html.push('<span class="pending" aria-label="Not heard yet">○</span>');
  }
  $('wordFeedback').innerHTML=html.join(' ');
 }
 function toggleSpeech(){if(listening){stopSpeech();return}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('speechStatus').textContent='Speech recognition is not available in this browser. Try typing mode, or open Abide in a browser that supports speech recognition.';return}
- speechSessionMarked=false;recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';recognition.onresult=e=>{let text='';for(let i=0;i<e.results.length;i++)text+=e.results[i][0].transcript+' ';text=text.trim();$('transcript').textContent=text;renderWordFeedback(current.text,text);const score=similarity(current.text,text);$('speechResult').textContent=`Approximate word match: ${score}%. Green words appear to match; underlined words may need another look. Speech recognition can mishear words, so use this as a guide—not a definitive score.`;if(!speechSessionMarked&&e.results[e.results.length-1].isFinal&&score>=90){markReview();speechSessionMarked=true}};
+ speechSessionMarked=false;recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';recognition.onresult=e=>{let text='';for(let i=0;i<e.results.length;i++)text+=e.results[i][0].transcript+' ';text=text.trim();$('transcript').textContent='Speech is being checked privately.';renderWordFeedback(current.text,text);const score=similarity(current.text,text);$('speechResult').textContent=`Approximate word match: ${score}%. Progress markers show matches without displaying the verse. Speech recognition can mishear words, so use this as a guide—not a definitive score.`;if(!speechSessionMarked&&e.results[e.results.length-1].isFinal&&score>=90){markReview();speechSessionMarked=true}};
  recognition.onerror=e=>{$('speechStatus').textContent='Microphone or speech recognition issue: '+e.error+'. You can try again or use typing mode.';stopSpeech()};
  recognition.onend=()=>{listening=false;$('micBtn').textContent='● Start listening'};
  try{recognition.start();listening=true;$('micBtn').textContent='■ Stop listening';$('speechStatus').textContent='Listening… speak clearly and take your time.'}catch(e){$('speechStatus').textContent='Could not start speech recognition. Please try again.'}
